@@ -1,5 +1,4 @@
 # Copyright (c) 2012-2016 Seafile Ltd.
-import os
 import logging
 from constance import config
 from dateutil.relativedelta import relativedelta
@@ -21,57 +20,14 @@ from seahub.api2.authentication import TokenAuthentication
 from seahub.api2.throttling import UserRateThrottle
 from seahub.api2.permissions import CanGenerateShareLink
 
+from seahub.api2.endpoints.utils import get_share_link_info
+
 from seahub.share.models import FileShare, OrgFileShare
-from seahub.utils import gen_shared_link, is_org_context
+from seahub.utils import is_org_context
 from seahub.views import check_folder_permission
-from seahub.utils.timeutils import datetime_to_isoformat_timestr
 
 logger = logging.getLogger(__name__)
 
-
-def get_share_link_info(fileshare):
-    data = {}
-    token = fileshare.token
-
-    repo_id = fileshare.repo_id
-    try:
-        repo = seafile_api.get_repo(repo_id)
-    except Exception as e:
-        logger.error(e)
-        repo = None
-
-    path = fileshare.path
-    if path:
-        obj_name = '/' if path == '/' else os.path.basename(path.rstrip('/'))
-    else:
-        obj_name = ''
-
-    if fileshare.expire_date:
-        expire_date = datetime_to_isoformat_timestr(fileshare.expire_date)
-    else:
-        expire_date = ''
-
-    if fileshare.ctime:
-        ctime = datetime_to_isoformat_timestr(fileshare.ctime)
-    else:
-        ctime = ''
-
-    data['username'] = fileshare.username
-    data['repo_id'] = repo_id
-    data['repo_name'] = repo.repo_name if repo else ''
-
-    data['path'] = path
-    data['obj_name'] = obj_name
-    data['is_dir'] = True if fileshare.s_type == 'd' else False
-
-    data['token'] = token
-    data['link'] = gen_shared_link(token, fileshare.s_type)
-    data['view_cnt'] = fileshare.view_cnt
-    data['ctime'] = ctime
-    data['expire_date'] = expire_date
-    data['is_expired'] = fileshare.is_expired()
-
-    return data
 
 class ShareLinks(APIView):
 
